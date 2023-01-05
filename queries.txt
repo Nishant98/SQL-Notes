@@ -1,0 +1,387 @@
+Use having for filtering aggregated data
+where for category
+
+SELECT customer_id, SUM(amount) from payment GROUP BY customer_id HAVING SUM(amount) != 27.93 ORDER BY SUM(amount);
+
+SELECT customer_id, SUM(amount) from payment where customer_id != 318 GROUP BY customer_id ORDER BY SUM(amount);
+
+ILIKE is case insensitive
+
+SELECT DATE(payment_date) FROM payment;
+
+2007-02-15
+removes timestamp from the date
+
+SELECT DATE(payment_date), SUM(amount) FROM payment GROUP BY DATE(payment_date);
+
+SELECT staff_id, COUNT(amount) FROM payment GROUP BY staff_id ORDER BY COUNT(amount) DESC;
+
+SELECT rating, ROUND(AVG(replacement_cost), 2) FROM film GROUP BY rating;
+
+SELECT customer_id, SUM(amount) FROM payment GROUP BY customer_id ORDER BY SUM(amount) DESC LIMIT 5;
+
+SELECT customer_id, COUNT(payment_id) FROM payment GROUP BY customer_id HAVING COUNT(payment_id) >= 40;
+
+SELECT customer_id, staff_id, SUM(amount) FROM payment WHERE staff_id = 2 GROUP BY customer_id, staff_id HAVING SUM(amount) > 100;
+
+SELECT customer_id, SUM(amount) FROM payment WHERE staff_id = 2 GROUP BY customer_id HAVING SUM(amount) > 110;
+
+SELECT count(*) FROM film WHERE title LIKE 'J%';
+
+SELECT * FROM customer WHERE first_name LIKE 'E%' AND address_id < 500 ORDER BY customer_id DESC LIMIT 1;
+
+Alias is assigned at the very end, hence cannot not use it with the where/having clause
+
+Inner Join is symmetrical, i.e switching the table names will result into the same output
+
+Intersection of Tables
+
+Default is INNER JOIN / JOIN
+
+Only Combines Rows of Both Table where the condition is met
+
+SELECT * FROM payment
+INNER JOIN customer
+ON payment.customer_id = customer.customer_id
+
+
+OUTER JOIN
+allow us to specify how to deal with values only present in one of the table being joined.
+
+FULL/LEFT/RIGHT OUTER
+
+FULL - symmetrical
+Everything of both table
+null if not matching
+
+SELECT * FROM TABLE1 FULL OUTER JOIN TABLE2 ON TABLE1.id = TABLE2.id;
+
+FULL OUTER with WHERE
+grabs values of table A and B but ignores the intersection part
+get rows unique to either table 
+
+SELECT * FROM TABLE1 FULL OUTER JOIN TABLE2 ON TABLE1.id = TABLE2.id
+WHERE TABLE1.id IS NULL OR TABLE2.id IS NULL;
+
+SELECT * FROM payment
+FULL OUTER JOIN customer
+ON payment.customer_id = customer.customer_id
+WHERE customer.customer_id IS NULL OR payment.payment_id IS NULL;
+
+LEFT OUTER JOIN / LEFT JOIN - order matters asymmetric
+all rows of left table, no match in right then adds null
+entire table 1
+
+if we want entries unique to table 1 ie rows in table 1 and not found in table 2
+
+SELECT * FROM TABLE1 LEFT OUTER JOIN TABLE2 ON TABLE1.id = TABLE2.id
+WHERE TABLE2.id IS NULL;
+
+SELECT film.film_id, title, inventory_id FROM film
+LEFT OUTER JOIN inventory
+ON inventory.film_id = film.film_id
+WHERE inventory.film_id is NULL;
+
+RIGHT OUTER JOIN / RIGHT JOIN
+all entries from right table
+can also use LEFT JOIN and switch the table order
+
+UNION
+used to combine the result of 2 or more select statements
+
+SELECT * FROM TABLE1
+UNION 
+SELECT * FROM TABLE2
+
+SELECT customer_id, email, district FROM customer
+INNER JOIN address
+ON customer.address_id = address.address_id 
+WHERE district = 'California';
+
+SELECT film.film_id, title, first_name, last_name FROM film_actor
+INNER JOIN actor
+ON film_actor.actor_id = actor.actor_id
+INNER JOIN film
+ON film_actor.film_id = film.film_id
+WHERE first_name = 'Nick' AND last_name = 'Wahlberg';
+
+SELECT title, actor_id FROM film_actor
+INNER JOIN film
+ON film_actor.film_id = film.film_id
+WHERE actor_id IN (
+SELECT actor_id FROM actor WHERE first_name = 'Nick' AND last_name = 'Wahlberg');
+
+SHOW TIMEZONE
+SELECT NOW()
+SELECT TIMEOFDAY()
+SELECT CURRENT_TIME
+SELECT CURRENT_DATE
+
+EXTRACT() allows to obtain sub-component of a date value
+
+YEAR
+MONTH
+DAY
+WEEK
+QUARTER
+
+EXTRACT(YEAR FROM date_col)
+
+AGE(date_col)
+function calculates and returns the current age given a timestamp
+
+TO_CHAR()
+func to convert data types to text, useful for timestamp formatting
+
+TO_CHAR(date_col, 'mm-dd-yyyy')
+
+SELECT DISTINCT(TO_CHAR(payment_date, 'mon')) FROM payment;
+
+SELECT COUNT(*) FROM payment WHERE EXTRACT(dow FROM payment_date) = 1;
+
+SELECT ROUND(rental_rate/replacement_cost, 2)*100 FROM film;
+
+SELECT LENGTH(first_name) FROM customer;
+
+SELECT first_name || ' ' || last_name AS full_name FROM customer; 
+
+SELECT ROUND(rental_rate/replacement_cost, 2)*100 FROM film;
+
+SELECT LOWER(LEFT(first_name, 1)) || LOWER(last_name) || '@gmail.com' AS email FROM customer; 
+
+EXISTS operator is used to test for existence of rows in a subquery.
+
+SELECT col FROM TABLE1 WHERE
+EXISTS (SELECT col2 FROM TABLE1 WHERE condition);
+
+SELECT film_id, title FROM film
+WHERE film_id IN
+(SELECT inventory.film_id FROM rental
+INNER JOIN inventory
+ON inventory.inventory_id = rental.inventory_id
+WHERE return_date BETWEEN '2005-05-29' AND '2005-05-30');
+
+SELECT first_name, last_name FROM customer as c
+WHERE EXISTS
+(SELECT * FROM payment AS p
+WHERE p.customer_id = c.customer_id 
+AND amount > 11);
+
+SELF JOIN: 
+table joined to itself
+
+SELCT table1.col, table2.col
+FROM table as table1
+JOIN table as table2
+ON table1.col = table2.col;
+
+SELECT film1.title, film2.title, film1.length FROM film as film1 
+INNER JOIN film as film2 
+ON film1.film_id != film2.film_id AND film1.length = film2.length
+ORDER BY film1.length ASC;
+
+SELECT MAX(join_date) from members;
+
+Per Column - Hint for GROUP BY
+
+Column level
+NOT NULL
+UNIQUE
+
+CHECK constraint - all values satisfy certain conditions
+
+EXCLUSION constraint - ensures that if any two rows are compared on the specified column or expression using the specified operator, not all of these comparisions will return True
+
+TABLE level constraints
+
+CHECK - check when inserting or updating data
+REFERENCES - to constrain the value stored in the colum that must exist in a col in another table
+
+UNIQUE(col_list)
+
+PRIMARY KEY(col_list)
+
+Data type
+SERIAL - for PK
+INTEGER while referencing
+
+user_id INTEGER REFERENCES account(user_id)
+
+DROP COLUMN col_name CASCADE
+
+Conditional Expressions
+CASE:
+to execute SQL code when certain conditions are met
+similar to IF/ELSE
+
+2 ways - GENERAL CASE AND CASE EXPRESSION
+
+GENERAL: substitute for column name, have a logic there
+
+CASE
+	WHEN condition THEN result1
+	WHEN condition THEN result2
+	ELSE some_result
+END
+
+SELECT a,
+CASE
+	WHEN a = 1 THEN 'ONE'
+	WHEN a = 2 THEN 'TWO'
+	ELSE 'other'
+END AS LABEL
+FROM test;
+
+CASE EXPRESSION:
+
+first evalutates an expression then compares the result with each value in WHEN clause sequentially
+
+CASE expression
+	WHEN value1 THEN result1
+	WHEN value2 THEN result2
+	ELSE result3
+END
+
+use when we have to do some checks for equality
+General is more flexible, between etc is possible
+
+SELECT customer_id, 
+CASE
+	WHEN customer_id <= 100 THEN 'PREMIUM'
+	WHEN customer_id > 100 AND customer_id <= 200 THEN 'PLUS'
+	ELSE 'NORMAL'
+END AS CUSTOMER_CLASS
+FROM customer;
+
+SELECT customer_id, 
+CASE customer_id
+	WHEN 10 THEN 'WINNER'
+	WHEN 5 THEN 'SECOND'
+	ELSE 'NORMAL'
+END AS RESULTS
+FROM customer;
+
+SELECT
+SUM(CASE rental_rate
+ WHEN 0.99 THEN 1
+ ELSE 0
+END) AS number_of_99_movies
+FROM film;
+
+SELECT
+SUM(CASE rental_rate
+ WHEN 0.99 THEN 1
+ ELSE 0
+END) AS bargains, 
+SUM(CASE rental_rate
+ WHEN 2.99 THEN 1
+ ELSE 0
+END) AS regular,
+SUM(CASE rental_rate
+ WHEN 4.99 THEN 1
+ ELSE 0
+END) AS premium
+FROM film;
+
+SELECT
+SUM(CASE rating
+ WHEN 'R' THEN 1
+ ELSE 0
+END) AS r,
+SUM(CASE rating
+ WHEN 'PG' THEN 1
+ ELSE 0
+END) AS pg,
+SUM(CASE rating
+ WHEN 'PG-13' THEN 1
+ ELSE 0
+END) AS pg13
+FROM film;
+
+COALESCE function: 
+accepts unlimited number of arguments. It returns the first argument that is
+not null. If all arguments are null, then function returns null
+
+it becomes useful when querying a table that contains null value and substituting it with another value.
+
+eg
+DISCOUNT has null
+make it 0 
+
+SELECT item, (price - discount) AS final FROM table;
+shows final as null if discount has null value
+
+SELECT item, (price - COALESCE(discount, 0)) AS final FROM table;
+
+CAST:
+convert one data type to another
+String to Integer
+
+SELECT CAST('5' AS INTEGER)
+CAST(date as TIMESTAMP)
+
+SELECT CHAR_LENGTH(CAST(inventory_id AS VARCHAR)) FROM rental;
+
+NULLIF: 
+function takes 2 input and returns NULL if both are equal otherwise it returns the First argument passed
+
+NULLIF(10, 10) -> NULL
+NULLIF(10, 12) -> 10
+
+divide by 0 error
+
+SELECT (
+SUM(CASE WHEN dept = 'A' THEN 1 ELSE 0 END)/
+NULLIF(SUM(CASE WHEN dept = 'B' THEN 1 ELSE 0 END), 0)
+) AS ratio
+FROM departments;
+
+now will return 10/null as null
+
+VIEWS:
+Often specific combination of tables are used over and over again. Instead of performing the same operations, we can create VIEW to quickly see the query with simple call
+
+SELECT * FROM VIEW instead of
+SELECT c1,c2,c3
+FROM TABLE1
+INNER JOIN TABLE2
+ON ...
+
+A view is a DB object that is of a stored query
+can be accessed as a virtual table
+view does not store data physically, it simply stores the query
+we can also alter and update existing views
+
+CREATE VIEW customer_info AS
+SELECT first_name, last_name, address FROM customer
+INNER JOIN address
+ON customer.address_id = address.address_id;
+
+SELECT * FROM customer_info;
+
+UPDATE VIEW:
+CREATE OR REPLACE VIEW customer_info AS  
+SELECT first_name, last_name, address, district FROM customer
+INNER JOIN address
+ON customer.address_id = address.address_id;
+
+DROP VIEW view_name;
+
+
+SELECT 
+  (SELECT count(*) FROM patients WHERE gender='M') AS male_count, 
+  (SELECT count(*) FROM patients WHERE gender='F') AS female_count;
+
+SELECT 
+  SUM(Gender = 'M') as male_count, 
+  SUM(Gender = 'F') AS female_count
+FROM patients
+
+select 
+  sum(case when gender = 'M' then 1 end) as male_count,
+  sum(case when gender = 'F' then 1 end) as female_count 
+from patients;
+
+ 
+
+
